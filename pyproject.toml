@@ -1,0 +1,96 @@
+[build-system]
+requires = ["hatchling>=1.18"]
+build-backend = "hatchling.build"
+
+[project]
+name = "activist-scout"
+version = "0.1.0"
+description = "KOSPI activist target screener + IC-grade single-stock deep dive automation"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.11"
+authors = [{ name = "activist-scout contributors" }]
+keywords = [
+    "korea",
+    "kospi",
+    "kosdaq",
+    "activist-investing",
+    "value-investing",
+    "screening",
+    "dart",
+    "pykrx",
+    "shareholder-activism",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Financial and Insurance Industry",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Office/Business :: Financial :: Investment",
+]
+
+dependencies = [
+    "pykrx>=1.0.50",
+    "yfinance>=0.2.40",
+    "pandas>=2.0",
+    "requests>=2.31",
+    "python-dotenv>=1.0",
+    "google-genai>=0.3",
+    "openai>=1.50",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.6",
+    "mypy>=1.10",
+]
+
+[project.urls]
+Homepage = "https://github.com/your-org/activist-scout"
+Documentation = "https://github.com/your-org/activist-scout/tree/main/docs"
+Repository = "https://github.com/your-org/activist-scout"
+Issues = "https://github.com/your-org/activist-scout/issues"
+
+[project.scripts]
+# CLI entry points — installed as commands when package is pip-installed
+activist-scout         = "activist_scout.pipeline:main"
+activist-scout-monitor = "activist_scout.monitor:main"
+activist-scout-deep    = "activist_scout.deep_dive:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/activist_scout"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+extend-exclude = ["tools/scan_rerate.py"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # bugbear
+    "UP",  # pyupgrade
+    "SIM", # simplify
+]
+ignore = [
+    "E501",  # line too long (handled by formatter where applicable)
+    "B008",  # function call in default argument
+    "B011",  # assert False
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra -q"
+pythonpath = ["src"]
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+warn_unused_ignores = true

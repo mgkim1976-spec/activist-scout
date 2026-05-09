@@ -1,0 +1,15 @@
+# Core dependencies (pinned to known-good versions)
+pykrx>=1.0.50
+yfinance>=0.2.40
+pandas>=2.0
+requests>=2.31
+python-dotenv>=1.0
+
+# LLM SDKs (used by stages/classify, stages/related_party, deep_dive)
+google-genai>=0.3
+openai>=1.50
+
+# Optional (uncomment to enable)
+# pytest>=8.0
+# ruff>=0.6
+# mypy>=1.10
