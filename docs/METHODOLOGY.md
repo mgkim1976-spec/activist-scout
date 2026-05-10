@@ -12,9 +12,9 @@
 > **v7**: NAV trust score (P3) + Captive subsidiary 자동 식별 (P2) +
 > 사외이사 임기 만료 catalyst timing (P1) + Causal validation framework (P4).
 
-이 문서는 파이프라인 **v3**의 설계 의도, 각 메트릭의 정의, 임계값 근거, 한계,
-그리고 운영 시 주의사항을 정리합니다. 코드 리뷰 / 모델 검토 / 신규 운용역
-온보딩에 사용하세요.
+이 문서는 현행 파이프라인(**v7**, v0.1.0 공개 기준)의 설계 의도, 각 메트릭의
+정의, 임계값 근거, 한계, 그리고 운영 시 주의사항을 정리합니다. 코드 리뷰 /
+모델 검토 / 신규 운용역 온보딩에 사용하세요.
 
 ---
 
@@ -106,34 +106,50 @@
 └───────────┬────────────┘
             ▼
 ┌────────────────────────┐
+│  parse_related_party   │ DART 사업보고서 본문 → Gemini 정량화
+│                        │ 일감몰아주기 비중(ratio_pct, confidence)
+└───────────┬────────────┘
+            ▼
+┌────────────────────────┐
 │  classify_traps        │ Gemini 7-카테고리 (정성) + 액션 + narrative
 └───────────┬────────────┘
             ▼
 ┌────────────────────────┐
-│  calibrate             │ ◀── backtest_activist.json (prior 입력)
-│                        │ PBR×filer 층화 Beta-binomial P
-│                        │ + 섹터 PBR median Up + 데이터 기반 Down
+│  score_targets         │ 3축 룰베이스 점수(TARGET / ACCUM / LEGAL)
+│                        │ + tier(HOT/WARM/LATE_*/WATCH/PASS/AVOID)
+│                        │ + LATE_* 분리용 filing 후 KOSPI alpha
 └───────────┬────────────┘
             ▼
 ┌────────────────────────┐
-│  build_report          │ Markdown 리포트 (AGM·섹터·페이오프 포함)
+│  build_report          │ Markdown 리포트 (AGM·섹터·tier별 카드)
 └────────────────────────┘
 ```
+
+> **v5 메모 — calibrate 단계 폐기.** v4까지 존재하던 Beta-binomial calibration 단계는
+> 상법 개정으로 인한 regime change 때문에 v5에서 제거되었습니다(상세: §4.8).
+> 현행 파이프라인은 룰베이스 `score_targets` 가 calibrate 자리를 대체합니다.
 
 ### 3.3 두 파이프라인의 분리 이유
 
 - **운영 주기 다름**: backtest는 30분 ~ 1시간, screening은 5~10분
 - **데이터 변화 주기 다름**: 10년 백테스트 모집단은 분기 1회 갱신이면 충분
 - **재실행 비용 분리**: 매주 screening할 때 backtest를 다시 돌릴 필요 없음
-- **calibrate가 유일한 연결고리**: backtest → calibration JSON → screening report
+- **연결 없음 (v5 이후)**: v4까지 backtest 결과가 calibration prior 로 screening 에
+  주입되었으나, regime change 로 calibrate 단계가 폐기된 이후 backtest 는
+  *참고용 reference* 일 뿐 screening 출력에 영향을 주지 않음 (§4.8, §5).
 
-**실행 방법**:
+**실행 방법** (모듈 호출 방식 — v0.1.0 패키지화 이후):
 ```bash
-python pipeline.py                        # 전체 9 stage
-python pipeline.py --only report          # 리포트만 재생성
-python pipeline.py --from calibrate       # calibrate부터 끝까지
-python pipeline.py --skip backtest        # 백테스트 제외
+python -m activist_scout.pipeline                              # screen 파이프라인 8 stage (기본)
+python -m activist_scout.pipeline --only report                # 리포트만 재생성
+python -m activist_scout.pipeline --from score                 # score 부터 끝까지
+python -m activist_scout.pipeline --skip parse_rp,classify     # 일부 stage 제외
+python -m activist_scout.pipeline --pipeline backtest          # 분기 1회 백테스트
+python -m activist_scout.pipeline --pipeline daily             # monitor 단독 실행
 ```
+
+stage 이름 목록 (screen 파이프라인): `screen, fetch_flow, fetch_liq, enrich,
+parse_rp, classify, score, report`.
 
 ---
 
@@ -226,7 +242,7 @@ URL은 `rcept_no`를 기반으로 자동 생성: `config.DART_VIEWER_URL` 참조
 `induty_code` 앞 2자리로 섹터 그룹 매핑 (`build_report.induty_to_sector`,
 `calibrate._ksic_2digit`).
 
-> **⚠️ 수정 이력 (v3)**: DART `induty_code`는 `"303"(3자리)`, `"2629"(4자리)`,
+> **⚠️ 수정 이력 (v3 시절 버그 수정)**: DART `induty_code`는 `"303"(3자리)`, `"2629"(4자리)`,
 > `"30399"(5자리)` 등 다양한 길이입니다. `zfill(5)[:2]`를 사용하면
 > `"303"→"00303"→"00"` 으로 잘리는 버그가 있었습니다.
 > **수정**: `str(code)[:2]` 직접 슬라이싱으로 변경.
@@ -716,7 +732,7 @@ https://dart.fss.or.kr/dsaf001/main.do?rcpNo={rcept_no}
 - [ ] `config.py` `HOLDINGS_CUTOFF_DATE` 연초 갱신 (예: `"20260101"`)
 - [ ] `screen_value_ownership.py` `--year` 인자를 최신 사업보고서 연도로 변경
 - [ ] 백테스트 모집단 확장 검토
-- [ ] `python pipeline.py --from enrich` 로 공시 데이터 갱신 (5%+ URL 포함)
+- [ ] `python -m activist_scout.pipeline --from enrich` 로 공시 데이터 갱신 (5%+ URL 포함)
 
 ### 진입 전 due diligence
 
@@ -736,4 +752,7 @@ https://dart.fss.or.kr/dsaf001/main.do?rcpNo={rcept_no}
 - DART OpenAPI: <https://opendart.fss.or.kr/guide/main.do>
 - pykrx 문서: <https://github.com/sharebook-kr/pykrx>
 
-*Last updated: 2026-05-08 — v3 (9-stage pipeline, sector bug fix, institutional VWAP, DART URLs)*
+*Last updated: 2026-05-11 (v0.1.0 public 기준) — v7 파이프라인: screening 8 stage
+(screen → fetch_flow → fetch_liq → enrich → parse_rp → classify → score → report),
+related-party LLM 정량화, captive subsidiary 자동 식별, NAV trust score,
+사외이사 임기 만료 catalyst, causal validation framework.*
