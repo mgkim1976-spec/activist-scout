@@ -8,7 +8,9 @@
   분류한다.
 
 Phase 1 (현 위치 tools/filing_intel/): MVP, 두올 케이스 재현 검증.
-Phase 2: 검증 후 별도 repo (5pct-radar) 로 분리 예정.
+Phase 2: 분리 완료 → https://github.com/mgkim1976-spec/5pct-radar
+  본 prototype 는 *시작 흔적* 으로 보존됨. 실제 사용은 별도 repo 의 도구 사용
+  권장 (배치 모드, catalyst chain, actor ranking, lifecycle backtest 등 추가).
 
 ⚠️ 본 모듈도 §13 "사람 검증 필수" 정신을 유지한다. LLM 출력은 *반드시
 원본 공시 본문으로 검증* 후 의사결정. 환각 가능성 명시.

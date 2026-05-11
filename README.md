@@ -264,7 +264,29 @@ python -m activist_scout.pipeline --pipeline backtest
 
 ---
 
-## 9. 문서 안내
+## 9. 보완 도구 — 5pct-radar
+
+이 도구를 쓰다가 *"5% 이상 지분 신고 본문 자체를 자동 분석할 수 있겠다"* 는
+아이디어가 나와 별도 도구로 분리됐습니다.
+
+**[5pct-radar](https://github.com/mgkim1976-spec/5pct-radar)** — 한국 거래소
+*모든* 5% 대량보유 신고 본문을 자동 분석해 시나리오 분류 (행동주의 / 산업 통합
+인수합병 / 사모펀드 인수 등) + 12개월 기대값 분포 *초안* 을 만드는 도구.
+
+| | activist-scout (이 도구) | 5pct-radar |
+|---|---|---|
+| 목적 | 행동주의 펀드 캠페인 *후보 발굴* | 모든 5% 신고 *본문 분석* |
+| Universe | 유가증권시장 행동주의 후보 ~48종 | 한국 거래소 전체 5% 신고 (연 수만 건) |
+| Cadence | 주간 | 매일 |
+
+두 도구는 *대체재가 아니라 보완재* — activist-scout 가 *upstream universe
+공급*, 5pct-radar 가 *downstream catalyst 추적*. 어떻게 발견됐는지는
+[5pct-radar 의 STORY](https://github.com/mgkim1976-spec/5pct-radar/blob/main/STORY.md)
+참고.
+
+---
+
+## 10. 문서 안내
 
 - [STORY.md](STORY.md) — 이 도구가 9일에 걸쳐 어떻게 만들어졌는지 (꼭 읽어 보세요)
 - [docs/METHODOLOGY.md](docs/METHODOLOGY.md) — 점수 가중치, 도메인 규칙 등 깊은
@@ -276,7 +298,7 @@ python -m activist_scout.pipeline --pipeline backtest
 
 ---
 
-## 10. 디렉토리 구조
+## 11. 디렉토리 구조
 
 ```
 activist-scout/
@@ -304,7 +326,7 @@ activist-scout/
 
 ---
 
-## 11. 기여하기
+## 12. 기여하기
 
 언제든 환영합니다. 특히 다음 영역이 큰 도움이 됩니다:
 
@@ -317,6 +339,6 @@ activist-scout/
 
 ---
 
-## 12. 라이선스
+## 13. 라이선스
 
 MIT — **무료, 누구나 사용·수정·재배포 가능. 출처만 표기하면 됨.**
