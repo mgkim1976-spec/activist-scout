@@ -36,7 +36,9 @@ def render(
     # §0 한 줄 요약
     summary = classification.get("summary_one_liner", "")
     scenario = classification.get("scenario", "?")
-    ev_mean = classification.get("ev_mean_pct", 0)
+    ev_mean = classification.get("ev_mean_pct")
+    if not isinstance(ev_mean, (int, float)):
+        ev_mean = 0.0
     out.append("## §0. 한 줄 요약")
     out.append("")
     out.append(f"> **시나리오: {scenario}** — {summary}")
@@ -140,8 +142,8 @@ def render(
     dist = classification.get("ev_distribution_12m", [])
     total_contrib = 0.0
     for d in dist:
-        p = d.get("probability_pct", 0)
-        i = d.get("price_impact_pct", 0)
+        p = d.get("probability_pct") or 0
+        i = d.get("price_impact_pct") or 0
         contrib = p * i / 100
         total_contrib += contrib
         out.append(f"| {d.get('label','')} | {p:.0f} | {i:+.1f} | {contrib:+.2f} |")

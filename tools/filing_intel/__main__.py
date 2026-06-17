@@ -39,6 +39,9 @@ def _stock_code_to_corp_code(stock_code: str) -> tuple[str | None, str | None]:
     """stock_code → (corp_code, corp_name)."""
     from activist_scout.config import CORP_MAP_FILE
 
+    if not Path(CORP_MAP_FILE).exists():
+        print(f"  · corp_code_map 없음 ({CORP_MAP_FILE}) — 파이프라인 fetch 단계 먼저 실행 필요")
+        return None, None
     with open(CORP_MAP_FILE, encoding="utf-8") as f:
         cm = json.load(f)
     info = cm.get(stock_code)
@@ -92,7 +95,9 @@ def run_one(rcept_no: str, stock_code: str | None = None, *, do_grounding: bool 
 
     # 5. 그룹 구조 역참조
     print("[4/6] 보고자 그룹 구조 역추적 ...")
-    filer_name = extracted.get("보고자_명칭", "") or meta.get("repror", "") if meta else ""
+    # 보고자 명칭: 본문 추출 우선, 없으면 majorstock 메타로 폴백.
+    # (과거: ternary 가 or 전체를 감싸 meta=None 이면 추출 명칭까지 버리는 버그)
+    filer_name = extracted.get("보고자_명칭") or (meta.get("repror") if meta else "") or ""
     if not filer_name:
         print("  · 보고자 명칭 없음 — 추적 skip")
         filer_resolution: dict[str, Any] = {
@@ -139,8 +144,9 @@ def run_one(rcept_no: str, stock_code: str | None = None, *, do_grounding: bool 
     if not classification:
         print("  ✗ classify 실패")
         return None
-    print(f"  ✓ scenario = {classification.get('scenario')}, "
-          f"EV mean = {classification.get('ev_mean_pct'):+.1f}%")
+    ev_mean = classification.get("ev_mean_pct")
+    ev_mean_str = f"{ev_mean:+.1f}%" if isinstance(ev_mean, (int, float)) else "?"
+    print(f"  ✓ scenario = {classification.get('scenario')}, EV mean = {ev_mean_str}")
 
     # 8. 보고서 + 인덱스
     md = report.render(

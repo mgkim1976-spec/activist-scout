@@ -49,12 +49,17 @@ def fetch_document_text(rcept_no: str, *, timeout: int = 60) -> str:
         params={"crtfc_key": DART_API_KEY, "rcept_no": rcept_no},
         timeout=timeout,
     )
+    if resp.status_code != 200 or not resp.content:
+        return ""
     try:
         zf = zipfile.ZipFile(io.BytesIO(resp.content))
     except zipfile.BadZipFile:
         return ""
 
-    biggest = max(zf.namelist(), key=lambda n: zf.getinfo(n).file_size)
+    names = zf.namelist()
+    if not names:
+        return ""
+    biggest = max(names, key=lambda n: zf.getinfo(n).file_size)
     raw = zf.read(biggest).decode("utf-8", errors="replace")
     txt = re.sub(r"<[^>]+>", " ", raw)
     txt = re.sub(r"\s+", " ", txt).strip()
@@ -65,7 +70,8 @@ def slice_around(text: str, keywords: list[str], window: int = 600) -> dict[str,
     """본문에서 각 키워드 주변 ±window 자만 추출 (LLM 토큰 절감용)."""
     out: dict[str, str] = {}
     for kw in keywords:
-        m = re.search(kw, text)
+        # 키워드는 리터럴로 취급 (괄호·점 등 정규식 특수문자 오작동 방지)
+        m = re.search(re.escape(kw), text)
         if not m:
             out[kw] = ""
             continue
